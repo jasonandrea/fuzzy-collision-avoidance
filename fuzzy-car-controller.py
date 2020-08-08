@@ -122,59 +122,68 @@ def inference(distance, speed):
     The inference engine.
     :return: Brake pressure degrees to be defuzzified
     """
-    brakeDegrees = []
+    softDegrees = [0]
+    mediumDegrees = [0]
+    hardDegrees = [0]
+    degreesResult = [0, 0, 0]
 
     # IF speed IS slow AND distance IS close THEN brake medium
     if speed[0] != -1 and distance[0] != -1:
-        brakeDegrees.append([0, min(speed[0], distance[0]), 0])
+        mediumDegrees.append(min(speed[0], distance[0]))
 
     # IF speed IS slow AND distance IS intermediate THEN brake soft
     if speed[0] != -1 and distance[1] != -1:
-        brakeDegrees.append([min(speed[0], distance[1]), 0, 0])
+        softDegrees.append(min(speed[0], distance[1]))
 
     # IF speed IS slow AND distance IS far THEN brake soft
     if speed[0] != -1 and distance[2] != -1:
-        brakeDegrees.append([min(speed[0], distance[2]), 0, 0])
+        softDegrees.append(min(speed[0], distance[2]))
 
     # IF speed IS medium AND distance IS close THEN brake hard
     if speed[1] != -1 and distance[0] != -1:
-        brakeDegrees.append([0, 0, min(speed[1], distance[0])])
+        hardDegrees.append(min(speed[1], distance[0]))
 
     # IF speed IS medium AND distance IS intermediate THEN brake medium
     if speed[1] != -1 and distance[1] != -1:
-        brakeDegrees.append([0, min(speed[1], distance[1]), 0])
+        mediumDegrees.append(min(speed[1], distance[1]))
 
     # IF speed IS medium AND distance IS far THEN brake soft
     if speed[1] != -1 and distance[2] != -1:
-        brakeDegrees.append([min(speed[1], distance[2]), 0, 0])
+        softDegrees.append(min(speed[1], distance[2]))
 
     # IF speed IS fast AND distance IS close THEN brake hard
     if speed[2] != -1 and distance[0] != -1:
-        brakeDegrees.append([0, 0, min(speed[2], distance[0])])
+        hardDegrees.append(min(speed[2], distance[0]))
 
     # IF speed IS fast AND distance IS intermediate THEN brake hard
     if speed[2] != -1 and distance[1] != -1:
-        brakeDegrees.append([0, 0, min(speed[2], distance[1])])
+        hardDegrees.append(min(speed[2], distance[1]))
 
     # IF speed IS fast AND distance IS far THEN brake medium
     if speed[2] != -1 and distance[2] != -1:
-        brakeDegrees.append([0, min(speed[2], distance[2]), 0])
+        mediumDegrees.append(min(speed[2], distance[2]))
 
-    return brakeDegrees
+    degreesResult[0] = max(softDegrees)
+    degreesResult[1] = max(mediumDegrees)
+    degreesResult[2] = max(hardDegrees)
+
+    return degreesResult
 
 
 def defuzzify(brake):
     """
     Defuzzification of the result from the inference engine to make
-    the output become user friendly.
+    the output become user friendly, using Weighted Average method.
     :param brake: brake degrees from the inference engine
     :return: defuzzified value, user friendly
     """
-    brakePressure = 0
+    soft = brake[0] * (brakeRange["SOFT"][2] - ((brakeRange["SOFT"][2] - brakeRange["SOFT"][0]) * brake[0]))
+    medium = brake[1] * (brakeRange["MEDIUM"][2] - ((brakeRange["MEDIUM"][2] - brakeRange["MEDIUM"][0]) * brake[1]))
+    hard = brake[2] * (brakeRange["HARD"][2] - ((brakeRange["HARD"][2] - brakeRange["HARD"][0]) * brake[2]))
 
-    # TO DO
+    brakePressure = (soft + medium + hard) / sum(brake)
 
-    return str(brakePressure * 100) + '%'
+    return '{:0.2f}%'.format(brakePressure)
 
 
 def buttonCalculate():
@@ -189,9 +198,12 @@ def buttonCalculate():
     try:
         distance = int(txtInputDistance.get())
         speed = int(txtInputSpeed.get())
+        # Raise an ValueError if input is less than 0
+        if distance < 0 or speed < 0:
+            raise ValueError
     except ValueError:
         lblOutput.configure(text='INVALID INPUT')
-        return 0
+        return
 
     # Fuzzification
     distDegrees, speedDegrees = fuzzify(distance, speed)
@@ -205,12 +217,14 @@ def buttonCalculate():
     # Edit output label for the user to see
     lblOutput.configure(text=brakePressure)
 
+
 window = Tk()
 window.title('Fuzzy Collision Avoidance')
+window.resizable(False, False)
 
 # Labels
-lblInputSpeed = Label(window, text='Vehicle Speed', font=('Arial', 10))
-lblInputDistance = Label(window, text='Distance to Object', font=('Arial', 10))
+lblInputSpeed = Label(window, text='Vehicle Speed (km/h)', font=('Arial', 10))
+lblInputDistance = Label(window, text='Distance to Object (m)', font=('Arial', 10))
 lblOutput = Label(window, text='', font=('Arial', 10))
 
 # Label placements
