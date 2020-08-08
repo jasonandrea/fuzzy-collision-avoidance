@@ -179,7 +179,7 @@ def defuzzify(brake):
     """
     soft = brake[0] * (brakeRange["SOFT"][2] - ((brakeRange["SOFT"][2] - brakeRange["SOFT"][0]) * brake[0]))
     medium = brake[1] * (brakeRange["MEDIUM"][2] - ((brakeRange["MEDIUM"][2] - brakeRange["MEDIUM"][0]) * brake[1]))
-    hard = brake[2] * (brakeRange["HARD"][2] - ((brakeRange["HARD"][2] - brakeRange["HARD"][0]) * brake[2]))
+    hard = brake[2] * (((brakeRange["HARD"][2] - brakeRange["HARD"][0]) * brake[2]) + brakeRange["HARD"][0])
 
     brakePressure = (soft + medium + hard) / sum(brake)
 
